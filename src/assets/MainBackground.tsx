@@ -1,6 +1,6 @@
 import graphOverlay from "./graph overlay.png";
 
-const AuthBackground = () => {
+const MainBackground = () => {
   return (
     <div
       style={{
@@ -36,4 +36,4 @@ const AuthBackground = () => {
   );
 };
 
-export default AuthBackground;
+export default MainBackground;

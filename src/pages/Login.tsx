@@ -1,20 +1,74 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { FormInput } from "@/components/auth/FormInput";
 import AuthPagesLayout from "@/Layouts/AuthPagesLayout";
 import girlKidImg from "@/assets/gril kid.jpg";
+import { loginUser } from "@/Api/APICalls";
+import {
+  clearAuthSession,
+  hasUsableRefreshToken,
+  persistAuthSession,
+  type TokenResponseDTO,
+} from "@/Api/AuthSession";
 
 const Login = () => {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle login
+
+    const formData = new FormData(e.currentTarget);
+    const username = String(formData.get("username") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    if (!username || !password) {
+      setErrorMessage("يرجى إدخال اسم المستخدم وكلمة المرور.");
+      return;
+    }
+
+    setErrorMessage(null);
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await loginUser({ userName: username, password });
+
+      if (!response?.success || !response?.data) {
+        clearAuthSession();
+        setErrorMessage(
+          response?.errorMessage || "فشل تسجيل الدخول. حاول مرة أخرى.",
+        );
+        return;
+      }
+
+      if (!persistAuthSession(response.data as TokenResponseDTO)) {
+        clearAuthSession();
+        setErrorMessage("استجابة تسجيل الدخول غير مكتملة.");
+        return;
+      }
+
+      if (!hasUsableRefreshToken()) {
+        clearAuthSession();
+        setErrorMessage("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.");
+        return;
+      }
+
+      // TODO: navigate user to dashboard after successful authentication.
+    } catch {
+      clearAuthSession();
+      setErrorMessage("حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <AuthPagesLayout img={girlKidImg}>
       <AuthFormCard
         title="تسجيل الدخول"
-        submitLabel="تسجيل الدخول"
+        submitLabel={isSubmitting ? "جارِ تسجيل الدخول..." : "تسجيل الدخول"}
         onSubmit={handleSubmit}
         footer={
           <>
@@ -60,6 +114,11 @@ const Login = () => {
             نسيت كلمة المرور
           </a>
         </div>
+        {errorMessage ? (
+          <p className="w-full text-right text-sm text-red-600">
+            {errorMessage}
+          </p>
+        ) : null}
       </AuthFormCard>
     </AuthPagesLayout>
   );

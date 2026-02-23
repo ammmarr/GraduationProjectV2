@@ -1,6 +1,8 @@
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 import boyKidImg from "@/assets/hands.jpg";
+import ProfileWidget from "./ProfileWidget";
+import LoginButton from "../auth/LoginButton";
 
 // ─── Extracted exact values from Frame_218.svg ───────────────────────────────
 // Canvas: 1280 × 120px
@@ -13,12 +15,16 @@ import boyKidImg from "@/assets/hands.jpg";
 
 export default function Navbar() {
   const [active, setActive] = useState("الرئيسية");
+  const [profileWidgetIsOpen, setProfileWidgetIsOpen] = useState(false);
 
   const links = [
     { id: "contact", label: "تواصل معنا" },
     { id: "letters", label: "الحروف" },
     { id: "home", label: "الرئيسية" },
   ];
+  const handleClick = () => {
+    setProfileWidgetIsOpen((prev) => !prev);
+  };
 
   return (
     <header
@@ -26,7 +32,7 @@ export default function Navbar() {
       style={{ zIndex: 2 }}
     >
       {/* RIGHT: Logo */}
-      <div className="max-w-[1200px] flex items-center justify-between w-full">
+      <div className="max-w-[1200px] flex items-center justify-between w-full relative">
         <div className="flex   h-full shrink-0 items-center justify-center filter-[drop-shadow(0_10px_10px_rgba(0,0,0,0.25))]">
           <img
             src={logo}
@@ -61,13 +67,20 @@ export default function Navbar() {
         </nav>
 
         {/* LEFT: Profile Avatar */}
-        <div className="aspect-square  h-full shrink-0 overflow-hidden rounded-full filter-[drop-shadow(0_6px_10px_rgba(0,0,0,0.25))]">
+        {/* <button
+          onClick={handleClick}
+          className="aspect-square  h-full shrink-0 overflow-hidden rounded-full filter-[drop-shadow(0_6px_10px_rgba(0,0,0,0.25))] cursor-pointer"
+        >
           <img
             src={boyKidImg}
             alt="EMA2A"
             className="h-full w-full object-cover"
           />
-        </div>
+        </button> */}
+        <LoginButton />
+        {profileWidgetIsOpen && (
+          <ProfileWidget close={() => setProfileWidgetIsOpen(false)} />
+        )}
       </div>
     </header>
   );

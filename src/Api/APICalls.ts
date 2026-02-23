@@ -1,3 +1,4 @@
+import { getAccessToken } from "./AuthSession";
 export type HttpStatusCode =
   | 100
   | 101
@@ -185,6 +186,8 @@ export interface UpdateUserImageForm {
 
 type HttpMethod = "GET" | "POST" | "DELETE";
 
+const BASE_URL = import.meta.env.VITE_BASE_URI;
+
 export interface APICallsConfig {
   baseUrl: string;
   getAccessToken?: () => string | null | undefined;
@@ -194,7 +197,6 @@ export interface APICallsConfig {
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, "");
 
 const request = async <T>(
-  config: APICallsConfig,
   path: string,
   method: HttpMethod,
   options?: {
@@ -204,8 +206,8 @@ const request = async <T>(
     includeAuth?: boolean;
   },
 ): Promise<T> => {
-  const url = new URL(`${normalizeBaseUrl(config.baseUrl)}${path}`);
-
+  console.log(BASE_URL);
+  const url = new URL(`${normalizeBaseUrl(BASE_URL)}${path}`);
   if (options?.query) {
     Object.entries(options.query).forEach(([key, value]) => {
       if (value !== undefined) url.searchParams.set(key, String(value));
@@ -215,8 +217,8 @@ const request = async <T>(
   const headers = new Headers();
   const includeAuth = options?.includeAuth ?? true;
 
-  if (includeAuth && config.getAccessToken) {
-    const token = config.getAccessToken();
+  if (includeAuth) {
+    const token = getAccessToken();
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -228,8 +230,7 @@ const request = async <T>(
     body = JSON.stringify(options.body);
   }
 
-  const fetchImpl = config.fetchImpl ?? fetch;
-  const response = await fetchImpl(url.toString(), { method, headers, body });
+  const response = await fetch(url.toString(), { method, headers, body });
 
   if (!response.ok) {
     const text = await response.text();
@@ -250,28 +251,22 @@ const request = async <T>(
 };
 
 // ArabicLanguageTranslator
-export const textToSign = (config: APICallsConfig, body: TextToSignDTO) =>
+export const textToSign = (body: TextToSignDTO) =>
   request<APIResponseDTO<string[][]>>(
-    config,
     "/api/ArabicLanguageTranslator/text-to-sign",
     "POST",
     { body },
   );
 
-export const audioToText = (
-  config: APICallsConfig,
-  body: TranscriptionRequest,
-) =>
+export const audioToText = (body: TranscriptionRequest) =>
   request<APIResponseDTO<string | null>>(
-    config,
     "/api/ArabicLanguageTranslator/audio-to-text",
     "POST",
     { body },
   );
 
-export const lettersKeyboard = (config: APICallsConfig, letter?: string) =>
+export const lettersKeyboard = (letter?: string) =>
   request<APIResponseDTO<string | null>>(
-    config,
     "/api/ArabicLanguageTranslator/letters-keyboard",
     "GET",
     {
@@ -280,10 +275,7 @@ export const lettersKeyboard = (config: APICallsConfig, letter?: string) =>
   );
 
 // Auth
-export const registerUser = (
-  config: APICallsConfig,
-  form: RegisterUserForm,
-) => {
+export const registerUser = (form: RegisterUserForm) => {
   const formData = new FormData();
   formData.append("Email", form.Email);
   formData.append("FullName", form.FullName);
@@ -293,7 +285,6 @@ export const registerUser = (
   if (form.UserImage) formData.append("UserImage", form.UserImage);
 
   return request<APIResponseDTO<ApplicationUserDTO>>(
-    config,
     "/api/Auth/register-user",
     "POST",
     {
@@ -303,165 +294,128 @@ export const registerUser = (
   );
 };
 
-export const loginUser = (config: APICallsConfig, body: LoginDTO) =>
-  request<APIResponseDTO<TokenResponseDTO>>(
-    config,
-    "/api/Auth/login-user",
-    "POST",
-    { body, includeAuth: false },
-  );
+export const loginUser = (body: LoginDTO) =>
+  request<APIResponseDTO<TokenResponseDTO>>("/api/Auth/login-user", "POST", {
+    body,
+    includeAuth: false,
+  });
 
-export const refreshTokens = (config: APICallsConfig, body: TokenRequestDTO) =>
+export const refreshTokens = (body: TokenRequestDTO) =>
   request<APIResponseDTO<TokenResponseDTO>>(
-    config,
     "/api/Auth/refresh-tokens",
     "POST",
     { body, includeAuth: false },
   );
 
-export const getResetPasswordToken = (
-  config: APICallsConfig,
-  body: GetResetPasswordTokenByEmailDTO,
-) =>
+export const getResetPasswordToken = (body: GetResetPasswordTokenByEmailDTO) =>
   request<APIResponseDTO<boolean>>(
-    config,
     "/api/Auth/get-reset-password-token",
     "POST",
     { body, includeAuth: false },
   );
 
-export const resetPassword = (config: APICallsConfig, body: ResetPasswordDTO) =>
-  request<APIResponseDTO<boolean>>(config, "/api/Auth/reset-password", "POST", {
+export const resetPassword = (body: ResetPasswordDTO) =>
+  request<APIResponseDTO<boolean>>("/api/Auth/reset-password", "POST", {
     body,
     includeAuth: false,
   });
 
-export const changePassword = (
-  config: APICallsConfig,
-  body: ChangePasswordDTO,
-) =>
-  request<APIResponseDTO<boolean>>(
-    config,
-    "/api/Auth/change-password",
-    "POST",
-    { body },
-  );
+export const changePassword = (body: ChangePasswordDTO) =>
+  request<APIResponseDTO<boolean>>("/api/Auth/change-password", "POST", {
+    body,
+  });
 
-export const loginGoogle = (config: APICallsConfig) =>
-  request<void>(config, "/api/Auth/login-google", "GET", {
+export const loginGoogle = () =>
+  request<void>("/api/Auth/login-google", "GET", {
     includeAuth: false,
   });
 
-export const googleCallback = (config: APICallsConfig) =>
+export const googleCallback = () =>
   request<APIResponseDTO<ExternalLoginResponseDTO>>(
-    config,
     "/api/Auth/google-callback",
     "GET",
     { includeAuth: false },
   );
 
-export const updateUserImage = (
-  config: APICallsConfig,
-  form: UpdateUserImageForm,
-) => {
+export const updateUserImage = (form: UpdateUserImageForm) => {
   const formData = new FormData();
   if (form.NewImge) formData.append("NewImge", form.NewImge);
 
   return request<APIResponseDTO<string | null>>(
-    config,
     "/api/Auth/update-user-image",
     "POST",
     { formData },
   );
 };
 
-export const logout = (config: APICallsConfig, body: TokenRequestDTO) =>
-  request<void>(config, "/api/Auth/logout", "POST", { body });
+export const logout = (body: TokenRequestDTO) =>
+  request<void>("/api/Auth/logout", "POST", { body });
 
-export const userProfile = (config: APICallsConfig) =>
-  request<APIResponseDTO<UserProfileDTO>>(
-    config,
-    "/api/Auth/user-profile",
-    "GET",
-  );
+export const userProfile = () =>
+  request<APIResponseDTO<UserProfileDTO>>("/api/Auth/user-profile", "GET");
 
-export const updateUserProfile = (
-  config: APICallsConfig,
-  body: UpdateUserProfileDTO,
-) =>
+export const updateUserProfile = (body: UpdateUserProfileDTO) =>
   request<APIResponseDTO<UserProfileDTO>>(
-    config,
     "/api/Auth/update-user-profile",
     "POST",
     { body },
   );
 
-export const testAuthentication = (config: APICallsConfig) =>
-  request<void>(config, "/api/Auth/test-authentication", "GET");
+export const testAuthentication = () =>
+  request<void>("/api/Auth/test-authentication", "GET");
 
 // SignLanguageTranslator
-export const translateFrame = (config: APICallsConfig, body: FrameData) =>
+export const translateFrame = (body: FrameData) =>
   request<APIResponseDTO<string | null>>(
-    config,
     "/api/SignLanguageTranslator",
     "POST",
     { body },
   );
 
-export const finalizeSentence = (config: APICallsConfig, body: SentenceData) =>
+export const finalizeSentence = (body: SentenceData) =>
   request<APIResponseDTO<string | null>>(
-    config,
     "/api/SignLanguageTranslator/finalize-sentence",
     "POST",
     { body },
   );
 
-export const correctSentence = (config: APICallsConfig, body: SentenceData) =>
+export const correctSentence = (body: SentenceData) =>
   request<APIResponseDTO<CorrectedResponse>>(
-    config,
     "/api/SignLanguageTranslator/correct-sentence",
     "POST",
     { body },
   );
 
-export const generateAudio = (config: APICallsConfig, body: TTSRequest) =>
+export const generateAudio = (body: TTSRequest) =>
   request<APIResponseDTO<TTSResponse>>(
-    config,
     "/api/SignLanguageTranslator/generate-audio",
     "POST",
     { body },
   );
 
-export const textToAudio = (config: APICallsConfig, body: SentenceData) =>
+export const textToAudio = (body: SentenceData) =>
   request<APIResponseDTO<TTSResponse>>(
-    config,
     "/api/SignLanguageTranslator/text-to-audio",
     "POST",
     { body },
   );
 
 // UserHistory
-export const getUserHistory = (config: APICallsConfig) =>
+export const getUserHistory = () =>
   request<APIResponseDTO<UserRecordDTO[] | null>>(
-    config,
     "/api/UserHistory/get-user-history",
     "GET",
   );
 
-export const deleteUserHistoryRecord = (
-  config: APICallsConfig,
-  body: DeleteUserRecordDTO,
-) =>
+export const deleteUserHistoryRecord = (body: DeleteUserRecordDTO) =>
   request<APIResponseDTO<boolean>>(
-    config,
     "/api/UserHistory/delete-user-history-record",
     "DELETE",
     { body },
   );
 
-export const deleteAllUserHistory = (config: APICallsConfig) =>
+export const deleteAllUserHistory = () =>
   request<APIResponseDTO<boolean>>(
-    config,
     "/api/UserHistory/delete-all-user-history",
     "DELETE",
   );

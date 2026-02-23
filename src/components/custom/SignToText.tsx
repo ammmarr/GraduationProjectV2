@@ -90,7 +90,7 @@ const SpeakerIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
 
 export default function SignToText() {
   return (
-    <section className="flex h-fit p-8 px-16 gap-[13px] rounded-[35px] bg-white  shadow-[0_10px_10px_rgba(0,0,0,0.25)]">
+    <section className="flex w-full h-fit p-8 px-16 gap-[13px] justify-between rounded-[35px] bg-white  shadow-[0_10px_10px_rgba(0,0,0,0.25)]">
       <div
         className="flex h-[535px] w-[500px] flex-col gap-[7px] px-[12px] drop-shadow-[0_6px_10px_rgba(0,0,0,0.25)]"
         dir="rtl"
