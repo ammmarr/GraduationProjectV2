@@ -1,31 +1,58 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-const toSignGloss = (value: string) =>
-  value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => `🤟 ${word}`);
+import { textToSign } from "@/Api/APICalls";
+import DisplayWordCard from "./DisplayCardLetters";
 
 export default function TextToSign() {
   const [inputText, setInputText] = useState("");
   const [translated, setTranslated] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const hasTranslation = translated.length > 0;
 
   const previewText = useMemo(() => {
+    if (isLoading) return "جارٍ الترجمة...";
+    if (error) return error;
     if (hasTranslation) return null;
     return "ادخل نصًا وانقر على ترجمة لعرض لغة الإشارة";
-  }, [hasTranslation]);
+  }, [error, hasTranslation, isLoading]);
 
-  const handleTranslate = () => {
-    setTranslated(toSignGloss(inputText));
+  const handleTranslate = async () => {
+    const normalizedInput = inputText.trim();
+    if (!normalizedInput) {
+      setTranslated([]);
+      setError("الرجاء إدخال نص قبل الترجمة");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await textToSign({ text: normalizedInput });
+      const signs = response.data;
+
+      if (!signs.length) {
+        setTranslated([]);
+        setError("لم يتم العثور على ترجمة لهذا النص");
+        return;
+      }
+
+      setTranslated(signs);
+    } catch (translateError) {
+      setTranslated([]);
+      setError("حدث خطأ أثناء الترجمة. حاول مرة أخرى.");
+      console.error(translateError);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
+  console.log(translated);
   return (
     <section
       dir="rtl"
-      className="mx-auto flex w-full  flex-row items-start justify-between gap-[13px] rounded-[35px] bg-white px-8 py-7 shadow-[0_10px_10px_rgba(0,0,0,0.25)]"
+      className="mx-auto flex w-full flex-row items-start justify-between gap-[13px] rounded-[35px] bg-white px-8 py-7 shadow-[0_10px_10px_rgba(0,0,0,0.25)]"
       style={{ direction: "ltr" }}
     >
       <div className="flex h-full w-full max-w-[475px] flex-col items-start gap-8 px-3 drop-shadow-[0_6px_10px_rgba(0,0,0,0.25)]">
@@ -46,9 +73,10 @@ export default function TextToSign() {
           <button
             type="button"
             onClick={handleTranslate}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-[25px] bg-[#19156C] text-2xl font-normal leading-[45px] text-white shadow-[0_6px_10px_rgba(0,0,0,0.25)] transition hover:opacity-95"
+            disabled={isLoading}
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-[25px] bg-[#19156C] text-2xl font-normal leading-[45px] text-white shadow-[0_6px_10px_rgba(0,0,0,0.25)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            ترجمة النص إلى إشارة
+            {isLoading ? "جارٍ الترجمة..." : "ترجمة النص إلى إشارة"}
           </button>
 
           <button
@@ -64,25 +92,13 @@ export default function TextToSign() {
         <h2 className="w-full text-right text-2xl font-bold leading-[45px] text-black">
           ترجمة لغة الإشارة
         </h2>
-
-        <div className="flex min-h-[480px] w-full flex-col items-center justify-center gap-[27px] rounded-[35px] border-[3px] border-dashed border-[#898989] bg-[#E7E7E7] p-6 text-center">
-          {previewText ? (
-            <p className="text-2xl leading-[45px] text-[#898989]">
-              {previewText}
-            </p>
-          ) : (
-            <div className="flex w-full flex-wrap justify-center gap-3">
-              {translated.map((sign, index) => (
-                <span
-                  key={`${sign}-${index}`}
-                  className="rounded-full bg-white px-4 py-2 text-lg text-[#19156C] shadow"
-                >
-                  {sign}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        {translated?.length ? (
+          translated.map((word) => <DisplayWordCard word={word} />)
+        ) : (
+          <div className="flex min-h-[480px] w-full flex-col items-center justify-center gap-[27px] rounded-[35px] border-[3px] border-dashed border-[#898989] bg-[#E7E7E7] p-6 text-center">
+            <p className="text-2xl leading-[45px] text-[#898989]"></p>
+          </div>
+        )}
       </div>
     </section>
   );
