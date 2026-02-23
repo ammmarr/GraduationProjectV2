@@ -6,6 +6,7 @@ import DisplayWordCard from "./DisplayCardLetters";
 export default function TextToSign() {
   const [inputText, setInputText] = useState("");
   const [translated, setTranslated] = useState<string[]>([]);
+  const [latestTranslated, setLatestTranslated] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export default function TextToSign() {
         setError("لم يتم العثور على ترجمة لهذا النص");
         return;
       }
-
+      setLatestTranslated(normalizedInput);
       setTranslated(signs);
     } catch (translateError) {
       setTranslated([]);
@@ -48,7 +49,6 @@ export default function TextToSign() {
       setIsLoading(false);
     }
   };
-  console.log(translated);
   return (
     <section
       dir="rtl"
@@ -93,7 +93,13 @@ export default function TextToSign() {
           ترجمة لغة الإشارة
         </h2>
         {translated?.length ? (
-          translated.map((word) => <DisplayWordCard word={word} />)
+          translated.map((word, ind) => (
+            <DisplayWordCard
+              wordImages={word}
+              word={latestTranslated.split(" ")[ind]}
+              key={ind}
+            />
+          ))
         ) : (
           <div className="flex min-h-[480px] w-full flex-col items-center justify-center gap-[27px] rounded-[35px] border-[3px] border-dashed border-[#898989] bg-[#E7E7E7] p-6 text-center">
             <p className="text-2xl leading-[45px] text-[#898989]"></p>

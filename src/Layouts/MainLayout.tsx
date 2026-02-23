@@ -2,6 +2,7 @@ import SignToText from "@/components/custom/SignToText";
 import TabComponent from "@/components/custom/TabComponent";
 import TextToSign from "@/components/custom/TextToSign";
 import { useState } from "react";
+import BlurWrapper from "./BlurWrapper";
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState("ar-to-sign");
@@ -16,9 +17,9 @@ const MainLayout = () => {
         </h2>
 
         <TabComponent activeTabId={activeTab} onTabChange={setActiveTab} />
-        <div className="flex flex-col items-center justify-center w-full  gap-10 backdrop-blur-sm rounded-3xl p-16 bg-white/50 mb-16 mt-16 ">
+        <BlurWrapper>
           {activeTab == "ar-to-sign" ? <TextToSign /> : <SignToText />}
-        </div>
+        </BlurWrapper>
       </div>
     </>
   );

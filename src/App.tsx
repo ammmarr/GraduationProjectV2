@@ -7,6 +7,7 @@ import ResetPassword from "./pages/ResetPassword";
 import CheckCode from "./pages/CheckCode";
 import Home from "./pages/Home";
 import Letters from "./pages/Letters";
+import Instructions from "./pages/instructions";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<Home />} />
         <Route path="/letters" element={<Letters />} />
+        <Route path="/instructions" element={<Instructions />} />
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />

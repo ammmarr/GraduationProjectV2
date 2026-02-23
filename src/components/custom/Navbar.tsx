@@ -1,8 +1,8 @@
-import { useState } from "react";
 import logo from "@/assets/logo.png";
-import boyKidImg from "@/assets/hands.jpg";
-import ProfileWidget from "./ProfileWidget";
+import { useState } from "react";
 import LoginButton from "../auth/LoginButton";
+import ProfileWidget from "./ProfileWidget";
+import { NavLink } from "react-router-dom";
 
 // ─── Extracted exact values from Frame_218.svg ───────────────────────────────
 // Canvas: 1280 × 120px
@@ -18,9 +18,9 @@ export default function Navbar() {
   const [profileWidgetIsOpen, setProfileWidgetIsOpen] = useState(false);
 
   const links = [
-    { id: "contact", label: "تواصل معنا" },
+    { id: "instructions", label: "الارشادات" },
     { id: "letters", label: "الحروف" },
-    { id: "home", label: "الرئيسية" },
+    { id: "", label: "الرئيسية" },
   ];
   const handleClick = () => {
     setProfileWidgetIsOpen((prev) => !prev);
@@ -46,7 +46,8 @@ export default function Navbar() {
           {links.map(({ id, label }) => {
             const isActive = active === label;
             return (
-              <span
+              <NavLink
+                to={`/${id}`}
                 key={id}
                 role="button"
                 tabIndex={0}
@@ -61,7 +62,7 @@ export default function Navbar() {
                 `}
               >
                 {label}
-              </span>
+              </NavLink>
             );
           })}
         </nav>
