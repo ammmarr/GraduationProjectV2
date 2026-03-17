@@ -140,7 +140,7 @@ export default function ProfileWidget({ close }: ProfileWidgetProps) {
 
   const handleChangePassword = () => {
     close();
-    navigate("/change-password");
+    navigate("/forgot-password");
   };
 
   const handleLogout = async () => {
@@ -182,7 +182,10 @@ export default function ProfileWidget({ close }: ProfileWidgetProps) {
         </button>
 
         <div className="mt-[10px] mb-5 flex justify-center">
-          <div className="flex h-[152px] w-[152px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e8d5c4] shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+          <div
+            className="flex h-[152px] w-[152px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e8d5c4] shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+            onClick={() => navigate("/history")}
+          >
             {hasProfileImage && imageSrc ? (
               <img
                 src={imageSrc}
