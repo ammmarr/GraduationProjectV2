@@ -1,7 +1,9 @@
-import { useMemo, useState, useRef } from "react";
-import { textToSign } from "@/Api/APICalls";
-import { audioToText } from "@/Api/APICalls";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { textToSign, audioToText } from "@/Api/APICalls";
 import DisplayWordCard from "./DisplayCardLetters";
+
+const ARABIC_TEXT_REGEX = /^[\u0600-\u06FF\s]+$/;
 
 export default function TextToSign() {
   const [inputText, setInputText] = useState("");
@@ -23,7 +25,25 @@ export default function TextToSign() {
     return "ادخل نصًا وانقر على ترجمة لعرض لغة الإشارة";
   }, [error, hasTranslation, isLoading]);
 
-  // 🎙 Start Recording
+  const isArabicText = (text: string) => ARABIC_TEXT_REGEX.test(text.trim());
+
+  const sanitizeArabicInput = (value: string) => {
+    return value.replace(/[^\u0600-\u06FF\s]/g, "");
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64 = reader.result?.toString().split(",")[1];
+        if (base64) resolve(base64);
+        else reject("Base64 conversion failed");
+      };
+      reader.onerror = reject;
+    });
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -45,16 +65,15 @@ export default function TextToSign() {
     } catch (err) {
       console.error(err);
       setError("تعذر الوصول إلى الميكروفون");
+      toast.error("تعذر الوصول إلى الميكروفون");
     }
   };
 
-  // ⏹ Stop Recording
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
   };
 
-  // 🎧 After Recording Stops
   const handleAudioStop = async () => {
     try {
       setIsLoading(true);
@@ -71,10 +90,19 @@ export default function TextToSign() {
         mimeType: "audio/webm",
       });
 
-      const text = response.data;
+      const text = response.data?.trim();
 
       if (!text) {
         setError("لم يتم التعرف على الصوت");
+        toast.error("لم يتم التعرف على الصوت");
+        return;
+      }
+
+      if (!isArabicText(text)) {
+        setInputText("");
+        setTranslated([]);
+        setError("يُسمح بإدخال الحروف العربية فقط");
+        toast.error("يُسمح بإدخال الحروف العربية فقط");
         return;
       }
 
@@ -82,30 +110,38 @@ export default function TextToSign() {
     } catch (err) {
       console.error(err);
       setError("حدث خطأ أثناء تحويل الصوت");
+      toast.error("حدث خطأ أثناء تحويل الصوت");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 🔁 Convert Blob → Base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64 = reader.result?.toString().split(",")[1];
-        if (base64) resolve(base64);
-        else reject("Base64 conversion failed");
-      };
-      reader.onerror = reject;
-    });
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    const sanitizedValue = sanitizeArabicInput(value);
+
+    if (value !== sanitizedValue) {
+      toast.error("يُسمح بإدخال الحروف العربية فقط");
+    }
+
+    setInputText(sanitizedValue);
+    setError(null);
   };
 
   const handleTranslate = async () => {
     const normalizedInput = inputText.trim();
+
     if (!normalizedInput) {
       setTranslated([]);
       setError("الرجاء إدخال نص قبل الترجمة");
+      toast.error("الرجاء إدخال نص قبل الترجمة");
+      return;
+    }
+
+    if (!isArabicText(normalizedInput)) {
+      setTranslated([]);
+      setError("يُسمح بإدخال الحروف العربية فقط");
+      toast.error("يُسمح بإدخال الحروف العربية فقط");
       return;
     }
 
@@ -114,11 +150,12 @@ export default function TextToSign() {
       setError(null);
 
       const response = await textToSign({ text: normalizedInput });
-      const signs = response.data;
+      const signs = response.data ?? [];
 
       if (!signs.length) {
         setTranslated([]);
         setError("لم يتم العثور على ترجمة لهذا النص");
+        toast.error("لم يتم العثور على ترجمة لهذا النص");
         return;
       }
 
@@ -127,6 +164,7 @@ export default function TextToSign() {
     } catch (translateError) {
       setTranslated([]);
       setError("حدث خطأ أثناء الترجمة. حاول مرة أخرى.");
+      toast.error("حدث خطأ أثناء الترجمة. حاول مرة أخرى.");
       console.error(translateError);
     } finally {
       setIsLoading(false);
@@ -152,7 +190,7 @@ export default function TextToSign() {
 
           <textarea
             value={inputText}
-            onChange={(event) => setInputText(event.target.value)}
+            onChange={handleInputChange}
             placeholder="ادخل النص العربي هنا"
             className="h-44 w-full resize-none rounded-[10px] bg-[#F3F3F5] px-6 py-5 text-right"
           />
@@ -171,12 +209,11 @@ export default function TextToSign() {
           <button
             type="button"
             onClick={handleVoiceClick}
-            className={`flex h-14 w-full items-center justify-center rounded-[25px] border-2 transition
-              ${
-                isRecording
-                  ? "bg-red-500 text-white border-red-500"
-                  : "border-[#19156C] text-[#19156C]"
-              }`}
+            className={`flex h-14 w-full items-center justify-center rounded-[25px] border-2 transition ${
+              isRecording
+                ? "border-red-500 bg-red-500 text-white"
+                : "border-[#19156C] text-[#19156C]"
+            }`}
           >
             {isRecording ? "إيقاف التسجيل..." : "التسجيل الصوتي"}
           </button>
@@ -188,7 +225,7 @@ export default function TextToSign() {
           ترجمة لغة الإشارة
         </h2>
 
-        {translated?.length ? (
+        {translated.length ? (
           translated.map((word, ind) => (
             <DisplayWordCard
               wordImages={word}
