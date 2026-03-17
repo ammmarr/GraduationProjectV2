@@ -7,7 +7,7 @@ const ScreenWrapper = ({ children }) => {
       <MainBackground />
       <Navbar />
       <div className="w-full flex justify-center">
-        <div className="max-w-[1200px] border border-red-600 w-full min-h-screen flex items-center flex-col justify-center">
+        <div className="max-w-[1200px]  w-full min-h-screen flex items-center flex-col justify-center">
           {children}
         </div>
       </div>

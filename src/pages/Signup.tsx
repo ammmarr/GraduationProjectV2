@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { FormInput } from "@/components/auth/FormInput";
 import AuthPagesLayout from "@/Layouts/AuthPagesLayout";
 import girlKidImg from "@/assets/girl kid X.jpg";
+import { registerUser } from "@/Api/APICalls";
+import { toast } from "sonner";
 
 const Signup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -30,7 +32,14 @@ const Signup = () => {
         PhoneNumber: String(formValues.get("phone") ?? ""),
         UserImage: (formValues.get("userImage") as File) || undefined,
       });
-      e.currentTarget.reset();
+
+      toast.success("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
+
+      navigate("/login");
+    } catch (error: any) {
+      console.error("Error registering user:", error);
+
+      toast.error(error?.message || "حدث خطأ أثناء إنشاء المستخدم");
     } finally {
       setIsSubmitting(false);
     }

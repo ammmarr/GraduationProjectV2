@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthFormCard } from "@/components/auth/AuthFormCard";
 import { FormInput } from "@/components/auth/FormInput";
 import AuthPagesLayout from "@/Layouts/AuthPagesLayout";
@@ -11,11 +11,12 @@ import {
   persistAuthSession,
   type TokenResponseDTO,
 } from "@/Api/AuthSession";
+import { toast } from "sonner";
 
 const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -55,6 +56,9 @@ const Login = () => {
         return;
       }
 
+      toast.success("تم تسجيل الدخول بنجاح!");
+
+      navigate("/");
       // TODO: navigate user to dashboard after successful authentication.
     } catch {
       clearAuthSession();
