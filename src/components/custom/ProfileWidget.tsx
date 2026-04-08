@@ -139,8 +139,8 @@ export default function ProfileWidget({ close }: ProfileWidgetProps) {
   }, []);
 
   const handleChangePassword = () => {
-    close();
     navigate("/forgot-password");
+    close();
   };
 
   const handleLogout = async () => {
